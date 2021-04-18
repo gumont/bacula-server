@@ -1,0 +1,56 @@
+#!/bin/bash
+bacula_version="9.x.x"
+bacula_key="xxxxxxxxxxxx"
+linux_name="buster"
+export DEBIAN_FRONTEND=noninteractive
+
+# Packs necessaries for bacula
+apt-get install -y zip wget bzip2 apt-transport-https
+
+# Download repository keys 
+wget -c https://www.bacula.org/downloads/Bacula-4096-Distribution-Verification-key.asc -O /tmp/Bacula-4096-Distribution-Verification-key.asc
+
+# Add key on local repositiry
+apt-key add /tmp/Bacula-4096-Distribution-Verification-key.asc
+
+# Create respository Bacula Community
+echo "# Bacula Community
+deb http://www.bacula.org/packages/${bacula_key}/debs/${bacula_version}/${linux_name}/amd64/ ${linux_name} main" > /etc/apt/sources.list.d/bacula-community.list
+
+###################################################################
+# Installation PostgreSQL
+apt-get update
+apt-get install -y postgresql postgresql-client
+apt-get install -y bacula-postgresql
+
+# Enable boot start PostgreSQL 
+systemctl enable postgresql
+systemctl start postgresql
+
+# Create Bacula Data Base in PostgreSQL
+su - postgres -c "/opt/bacula/scripts/create_postgresql_database"
+su - postgres -c "/opt/bacula/scripts/create_postgresql_database"
+su - postgres -c "/opt/bacula/scripts/grant_postgresql_privileges"
+
+###################################################################
+
+# Habilitar o início dos daemons durante o boot
+systemctl enable bacula-fd.service
+systemctl enable bacula-sd.service
+systemctl enable bacula-dir.service
+
+# Iniciar os daemons do Bacula
+systemctl start bacula-fd.service
+systemctl start bacula-sd.service
+systemctl start bacula-dir.service
+
+# Criar atalho em /usr/sbin com os binários do Bacula
+
+# Isso permite rodar os daemons e utilitários
+
+# Sem entrar no diretório /opt/bacula/bin
+for i in `ls /opt/bacula/bin`; do
+    ln -s /opt/bacula/bin/$i /usr/sbin/$i;
+done
+# Substituir o endereço do bconsole.conf para localhost por padrão
+sed '/[Aa]ddress/s/=\s.*/= localhost/g' -i  /opt/bacula/etc/bconsole.conf
