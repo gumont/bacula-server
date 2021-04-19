@@ -1,0 +1,64 @@
+#INSTALLATION BACULUM WEB ON DEBIAN10 (BUSTER) 
+
+# Baixa chave do Baculum 
+wget -qO - http://bacula.org/downloads/baculum/baculum.pub | apt-key add -
+
+# Adiciona Repositorios do Baculum
+echo "
+deb [ arch=amd64 ] http://bacula.org/downloads/baculum/stable/debian buster main
+deb-src http://bacula.org/downloads/baculum/stable/debian buster main
+" > /etc/apt/sources.list.d/baculum.list
+
+# Instala pacotes necessarios para o funcionamento do Baculum
+apt-get update && apt-get install php-bcmath php7.3-mbstring baculum-api baculum-api-apache2 baculum-common bacula-console baculum-web baculum-web-apache2
+
+# Dar permissão de sudo ao Usuario "www-data"
+echo "Defaults:www-data "'!'"requiretty
+www-data ALL=NOPASSWD: /usr/sbin/bconsole
+www-data ALL=NOPASSWD: /usr/sbin/bdirjson
+www-data ALL=NOPASSWD: /usr/sbin/bsdjson
+www-data ALL=NOPASSWD: /usr/sbin/bfdjson
+www-data ALL=NOPASSWD: /usr/sbin/bbconsjson
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl start bacula-dir
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl stop bacula-dir
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl restart bacula-dir
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl start bacula-sd
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl stop bacula-sd
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl restart bacula-sd
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl start bacula-fd
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl stop bacula-fd
+www-data ALL=(root) NOPASSWD: /usr/bin/systemctl restart bacula-fd
+" > /etc/sudoers.d/baculum
+
+#Adicionar usuario "bacula" ao grupo "www-data"
+/sbin/usermod -aG bacula www-data 
+
+# Dar permissão ao www-data:bacula  para acessar /opt/bacula/working /opt/bacula/etc
+chown -R www-data:bacula /opt/bacula/working /opt/bacula/etc
+
+#Alterar permissão das pastas /opt/bacula/working /opt/bacula/etc 
+chmod -R g+rwx /opt/bacula/working /opt/bacula/etc
+
+/sbin/a2enmod rewrite
+/sbin/a2ensite baculum-web baculum-api
+
+#reniciar "apache2"
+systemctl restart apache2 
+
+# Dar permissão de acesso local (Não esta funcionando no Debian Buster) 
+sed -i 's/ident/trust/g; s/peer/trust/g' /etc/postgresql/11/main/pg_hba.conf
+
+# Reiniciar "postgrresql"
+systemctl restart postgresql 
+
+### Alterar senha do usario "bacula" no Postgresql ###
+# Acessar no Postgresql
+psql -U postgress
+#Já no postgresql Alterar senha do usuario bacula com o comando abaixo
+\password bacula
+
+
+# Acesse e configure pelo navegador de Internet a API http://localhost:9096/ e depois o Baculum http://localhost:9095/ 
+# (substitua localhost pelo IP do servidor se necessário)
+
+# 
