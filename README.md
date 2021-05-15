@@ -1,2 +1,2 @@
-# bacula_community
+# bacula
 Installation Bacula Community
