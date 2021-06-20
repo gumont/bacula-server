@@ -1,2 +1,2 @@
 # bacula
-Installation Bacula Community
+Bacula Community
